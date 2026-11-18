@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>우땅이의 따뜻한 편지 💌</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Jua&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Gaegu', cursive, sans-serif;
+      background-color: #7cc0ff;
+    }
+
+    /* 전체 배경 이미지 */
+    .bg-wrapper {
+      position: fixed;
+      inset: 0;
+      background-image: url('./uttangi.png');
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      z-index: 0;
+    }
+
+    /* 따뜻하고 포근한 햇살 오버레이 */
+    .warm-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 35%, rgba(255, 248, 225, 0.18), rgba(255, 224, 178, 0.28) 65%, rgba(90, 70, 40, 0.25));
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* 꽃잎 & 반짝이 캔버스 */
+    #effect-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* 메인 컨테이너 */
+    .container {
+      position: relative;
+      z-index: 3;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: max(20px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+    }
+
+    /* 상단 음악 컨트롤 바 */
+    .top-bar {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .music-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      border-radius: 999px;
+      background: rgba(255, 250, 240, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #6d4c3d;
+      font-family: 'Jua', sans-serif;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(109, 76, 61, 0.22);
+      transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .music-btn:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 253, 247, 0.96);
+    }
+
+    .music-btn:active {
+      transform: scale(0.96);
+    }
+
+    .music-btn.playing {
+      background: linear-gradient(135deg, #ffe5ec, #fff3cd);
+      border-color: #ffb3c6;
+      color: #5c3a2e;
+      animation: pulseGlow 2s infinite ease-in-out;
+    }
+
+    .music-icon {
+      display: inline-block;
+      font-size: 18px;
+    }
+
+    .music-btn.playing .music-icon {
+      animation: bounceNote 1s infinite ease-in-out;
+    }
+
+    @keyframes bounceNote {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-3px) rotate(10deg); }
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 6px 18px rgba(255, 179, 198, 0.45); }
+      50% { box-shadow: 0 8px 24px rgba(255, 179, 198, 0.75); }
+    }
+
+    /* 편지 카드 영역 */
+    .letter-card {
+      width: 100%;
+      max-width: 440px;
+      background: rgba(255, 252, 244, 0.84);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 2.5px solid rgba(255, 255, 255, 0.92);
+      border-radius: 28px;
+      padding: 26px 24px 28px;
+      box-shadow:
+        0 14px 36px rgba(74, 53, 37, 0.24),
+        inset 0 0 20px rgba(255, 236, 179, 0.45);
+      text-align: center;
+      position: relative;
+      margin: auto 0;
+    }
+
+    /* 카드 상단 귀여운 리본/뱃지 */
+    .card-badge {
+      display: inline-block;
+      background: #ffccd5;
+      color: #6d3b47;
+      font-family: 'Jua', sans-serif;
+      font-size: 13px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+      box-shadow: 0 3px 8px rgba(255, 179, 198, 0.4);
+      opacity: 0;
+      transform: translateY(-18px);
+      animation: dropDown 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+    }
+
+    .letter-title {
+      font-family: 'Jua', sans-serif;
+      font-size: clamp(22px, 5.5vw, 28px);
+      color: #5a3e2b;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+      opacity: 0;
+      transform: translateY(-20px);
+      animation: dropDown 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.45s forwards;
+    }
+
+    .letter-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: clamp(18px, 4.6vw, 21px);
+      line-height: 1.55;
+      color: #4e3629;
+      font-weight: 700;
+    }
+
+    /* 위에서 아래로 내려오듯 나타나는 편지 줄 애니메이션 */
+    .line {
+      opacity: 0;
+      transform: translateY(-22px);
+      animation: dropDown 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .line:nth-child(1) { animation-delay: 0.75s; }
+    .line:nth-child(2) { animation-delay: 1.15s; }
+    .line:nth-child(3) { animation-delay: 1.55s; }
+    .line:nth-child(4) { animation-delay: 1.95s; }
+    .line:nth-child(5) { animation-delay: 2.35s; }
+
+    .letter-sign {
+      margin-top: 18px;
+      font-family: 'Jua', sans-serif;
+      font-size: clamp(16px, 4.2vw, 19px);
+      color: #8c584c;
+      opacity: 0;
+      transform: translateY(-18px);
+      animation: dropDown 0.9s cubic-bezier(0.22, 1, 0.36, 1) 2.75s forwards;
+    }
+
+    @keyframes dropDown {
+      0% {
+        opacity: 0;
+        transform: translateY(-22px) scale(0.97);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* 다시 보기 버튼 (하단 은은한 안내) */
+    .replay-btn {
+      background: rgba(255, 255, 255, 0.65);
+      border: 1.5px solid rgba(255, 255, 255, 0.85);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-family: 'Gaegu', cursive, sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #5a3e2b;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .replay-btn:hover {
+      background: rgba(255, 255, 255, 0.9);
+      transform: translateY(-1px);
+    }
+
+    /* 모바일 세로 화면 대응 (우땅이 얼굴이 가려지지 않도록 여백/배치 최적화) */
+    @media (max-width: 600px) {
+      .bg-wrapper {
+        background-position: 52% 28%;
+      }
+      .container {
+        justify-content: space-between;
+        padding-top: max(14px, env(safe-area-inset-top));
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
+      }
+      .letter-card {
+        margin-top: auto;
+        margin-bottom: 10px;
+        padding: 20px 18px 22px;
+        border-radius: 24px;
+        background: rgba(255, 252, 244, 0.86);
+      }
+      .letter-lines {
+        gap: 7px;
+      }
+    }
+
+    @media (max-height: 640px) {
+      .letter-card {
+        padding: 16px 16px 18px;
+      }
+      .letter-title {
+        margin-bottom: 10px;
+      }
+      .letter-lines {
+        gap: 5px;
+        line-height: 1.4;
+      }
+      .letter-sign {
+        margin-top: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-wrapper" aria-hidden="true"></div>
+  <div class="warm-overlay" aria-hidden="true"></div>
+  <canvas id="effect-canvas" aria-hidden="true"></canvas>
+
+  <main class="container">
+    <div class="top-bar">
+      <button id="musicBtn" class="music-btn" type="button" aria-label="배경 음악 켜기 또는 끄기">
+        <span class="music-icon" id="musicIcon">🎵</span>
+        <span id="musicText">음악 켜기</span>
+      </button>
+    </div>
+
+    <section class="letter-card" aria-label="우땅이의 편지">
+      <div class="card-badge">🌼 초원 위 작은 선물 🌼</div>
+      <h1 class="letter-title">안녕! 나 우땅이야 🐵✨</h1>
+      <div class="letter-lines" id="letterLines">
+        <p class="line">푸른 초원 너머로 빼꼼 고개를 내밀어</p>
+        <p class="line">오늘 하루도 열심히 달려온 너에게</p>
+        <p class="line">따뜻한 햇살과 포근한 미소를 보내!</p>
+        <p class="line">작은 발걸음도 언제나 응원하고 있으니까</p>
+        <p class="line">오늘도 반짝반짝 행복한 하루 보내자 💛</p>
+      </div>
+      <p class="letter-sign">- 너의 귀여운 친구, 우땅이 올림 🍀 -</p>
+    </section>
+
+    <button id="replayBtn" class="replay-btn" type="button">✨ 편지 다시 읽기</button>
+  </main>
+
+  <script>
+    /* =========================================
+       1. 은은한 꽃잎 & 반짝이 파티클 애니메이션
+       ========================================= */
+    const canvas = document.getElementById('effect-canvas');
+    const ctx = canvas.getContext('2d');
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    const petals = [];
+    const sparkles = [];
+    const PETAL_COUNT = Math.min(24, Math.floor(width / 25) + 10);
+    const SPARKLE_COUNT = Math.min(32, Math.floor(width / 20) + 14);
+
+    const petalColors = [
+      'rgba(255, 214, 224, 0.85)',
+      'rgba(255, 240, 185, 0.85)',
+      'rgba(255, 255, 255, 0.85)',
+      'rgba(255, 200, 221, 0.8)'
+    ];
+
+    class Petal {
+      constructor(initial = false) {
+        this.reset(initial);
+      }
+      reset(initial = false) {
+        this.x = Math.random() * width;
+        this.y = initial ? Math.random() * height : -20;
+        this.size = 6 + Math.random() * 7;
+        this.speedY = 0.45 + Math.random() * 0.75;
+        this.speedX = -0.3 + Math.random() * 0.6;
+        this.angle = Math.random() * Math.PI * 2;
+        this.spin = (Math.random() - 0.5) * 0.025;
+        this.swayOffset = Math.random() * Math.PI * 2;
+        this.color = petalColors[Math.floor(Math.random() * petalColors.length)];
+      }
+      update(time) {
+        this.y += this.speedY;
+        this.x += this.speedX + Math.sin(time * 0.0012 + this.swayOffset) * 0.35;
+        this.angle += this.spin;
+        if (this.y > height + 20 || this.x < -30 || this.x > width + 30) {
+          this.reset(false);
+        }
+      }
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+        ctx.fillStyle = this.color;
+        // 작은 5잎 꽃 또는 꽃잎 모양
+        for (let i = 0; i < 5; i++) {
+          ctx.rotate((Math.PI * 2) / 5);
+          ctx.beginPath();
+          ctx.ellipse(0, this.size * 0.55, this.size * 0.36, this.size * 0.55, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.beginPath();
+        ctx.arc(0, 0, this.size * 0.24, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 230, 128, 0.9)';
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    class Sparkle {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.maxR = 1.8 + Math.random() * 2.8;
+        this.phase = Math.random() * Math.PI * 2;
+        this.speed = 0.018 + Math.random() * 0.025;
+      }
+      update() {
+        this.phase += this.speed;
+        if (this.phase > Math.PI * 2) {
+          this.reset();
+        }
+      }
+      draw() {
+        const alpha = Math.sin(this.phase) * 0.85;
+        if (alpha <= 0) return;
+        const r = this.maxR * (0.5 + 0.5 * Math.sin(this.phase));
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.fillStyle = `rgba(255, 252, 220, ${alpha.toFixed(2)})`;
+        ctx.shadowColor = 'rgba(255, 245, 180, 0.9)';
+        ctx.shadowBlur = 8;
+        // 4각 반짝이 별 모양
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 2.2);
+        ctx.quadraticCurveTo(0, 0, r * 2.2, 0);
+        ctx.quadraticCurveTo(0, 0, 0, r * 2.2);
+        ctx.quadraticCurveTo(0, 0, -r * 2.2, 0);
+        ctx.quadraticCurveTo(0, 0, 0, -r * 2.2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    for (let i = 0; i < PETAL_COUNT; i++) petals.push(new Petal(true));
+    for (let i = 0; i < SPARKLE_COUNT; i++) sparkles.push(new Sparkle());
+
+    function animate(time) {
+      ctx.clearRect(0, 0, width, height);
+      for (const s of sparkles) {
+        s.update();
+        s.draw();
+      }
+      for (const p of petals) {
+        p.update(time);
+        p.draw();
+      }
+      requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+
+    /* =========================================
+       2. 편지 애니메이션 다시 재생
+       ========================================= */
+    const replayBtn = document.getElementById('replayBtn');
+    replayBtn.addEventListener('click', () => {
+      const animatedEls = document.querySelectorAll('.card-badge, .letter-title, .line, .letter-sign');
+      animatedEls.forEach((el) => {
+        el.style.animation = 'none';
+        el.offsetHeight; // reflow
+        el.style.animation = '';
+      });
+    });
+
+    /* =========================================
+       3. Web Audio API 기반 오르골 스타일 귀여운 멜로디
+       ========================================= */
+    let audioCtx = null;
+    let isPlaying = false;
+    let melodyTimer = null;
+    let stepIndex = 0;
+
+    const musicBtn = document.getElementById('musicBtn');
+    const musicIcon = document.getElementById('musicIcon');
+    const musicText = document.getElementById('musicText');
+
+    // 음계 주파수 매핑 (C5 ~ A5, 따뜻하고 포근한 장조 오르골 멜로디)
+    const NOTES = {
+      C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
+      C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880.00, REST: 0
+    };
+
+    // 귀여운 자작 오르골 멜로디 (음표, 박자(초))
+    const MELODY = [
+      ['E5', 0.32], ['G5', 0.32], ['A5', 0.32], ['G5', 0.32],
+      ['E5', 0.32], ['C5', 0.32], ['D5', 0.64],
+      ['D5', 0.32], ['E5', 0.32], ['G5', 0.32], ['E5', 0.32],
+      ['D5', 0.32], ['C5', 0.32], ['E5', 0.64],
+
+      ['E5', 0.32], ['G5', 0.32], ['A5', 0.32], ['G5', 0.32],
+      ['E5', 0.32], ['D5', 0.32], ['C5', 0.64],
+      ['D5', 0.32], ['E5', 0.32], ['D5', 0.32], ['B4', 0.32],
+      ['C5', 0.96], ['REST', 0.32]
+    ];
+
+    function playMusicBoxNote(freq, duration) {
+      if (!audioCtx || freq === 0) return;
+      const now = audioCtx.currentTime;
+
+      // 기본 사인파 + 맑은 배음(트라이앵글)으로 오르골 소리 구현
+      const osc1 = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(freq, now);
+
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(freq * 2, now);
+
+      const osc2Gain = audioCtx.createGain();
+      osc2Gain.gain.setValueAtTime(0.08, now);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.22, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0008, now + duration * 1.4);
+
+      osc1.connect(gain);
+      osc2.connect(osc2Gain);
+      osc2Gain.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + duration * 1.45);
+      osc2.stop(now + duration * 1.45);
+    }
+
+    function scheduleNextNote() {
+      if (!isPlaying) return;
+      const [noteName, dur] = MELODY[stepIndex];
+      playMusicBoxNote(NOTES[noteName], dur);
+      stepIndex = (stepIndex + 1) % MELODY.length;
+      melodyTimer = setTimeout(scheduleNextNote, dur * 1000);
+    }
+
+    function toggleMusic() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      isPlaying = !isPlaying;
+      if (isPlaying) {
+        musicBtn.classList.add('playing');
+        musicIcon.textContent = '🎶';
+        musicText.textContent = '음악 끄기';
+        scheduleNextNote();
+      } else {
+        musicBtn.classList.remove('playing');
+        musicIcon.textContent = '🎵';
+        musicText.textContent = '음악 켜기';
+        clearTimeout(melodyTimer);
+      }
+    }
+
+    musicBtn.addEventListener('click', toggleMusic);
+  </script>
+</body>
+</html>
